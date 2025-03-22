@@ -37,6 +37,10 @@ jobs:
         run: pnpm install
 
       - name: Build
+        env:
+          WEB_HOST: ${{ vars.WEB_HOST }}
+          WEB_PLAUSIBLE_HOST: ${{ vars.WEB_PLAUSIBLE_HOST }}
+          WEB_DEFAULT_API: ${{ vars.WEB_DEFAULT_API }}
         run: pnpm run build
 
       - name: Build And Deploy

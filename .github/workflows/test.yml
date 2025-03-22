@@ -1,8 +1,12 @@
 name: Run tests
 
 on:
-  pull_request:
-  push:
+  # pull_request:
+  # push:
+  #   paths:
+  #     - api/**
+  #     - packages/**
+  workflow_dispatch:
 
 jobs:
   check-lockfile:

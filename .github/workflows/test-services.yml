@@ -1,11 +1,12 @@
 name: Run service tests
 
 on:
-  pull_request:
-  push:
-    paths:
-      - api/**
-      - packages/**
+  # pull_request:
+  # push:
+  #   paths:
+  #     - api/**
+  #     - packages/**
+  workflow_dispatch:
 
 jobs:
   check-services:

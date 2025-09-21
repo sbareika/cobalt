@@ -29,6 +29,20 @@ cobalt is a media downloader that doesn't piss you off. it's friendly, efficient
 
 paste the link, get the file, move on. that simple, just how it should be.
 
+### sponsors
+<div align="center" markdown="1">
+    <sup>special thanks to Warp for sponsoring the development of cobalt</sup>
+    <br>
+    <a href="https://go.warp.dev/cobalt">
+        <img alt="Warp banner" width="400" src="https://raw.githubusercontent.com/warpdotdev/brand-assets/be7d584f98e62b1579fd2e9338d4c7318a732f1b/Github/Sponsor/Warp-Github-LG-03.png">
+    </a>
+
+### [Warp, built for coding with multiple AI agents](https://go.warp.dev/cobalt)
+</div>
+
+#### RoyaleHosting
+cobalt is sponsored by [royalehosting.net](https://royalehosting.net/?partner=cobalt), and a part of our infrastructure is hosted on their network. we really appreciate their kindness and support!
+
 ### cobalt monorepo
 this monorepo includes source code for api, frontend, and related packages:
 - [api tree & readme](/api/)
@@ -36,12 +50,10 @@ this monorepo includes source code for api, frontend, and related packages:
 - [packages tree](/packages/)
 
 it also includes documentation in the [docs tree](/docs/):
-- [cobalt api documentation](/docs/api.md)
 - [how to run a cobalt instance](/docs/run-an-instance.md)
-- [how to protect a cobalt instance](/docs/protect-an-instance.md) (recommended if you host a public instance)
-
-### thank you
-cobalt is sponsored by [royalehosting.net](https://royalehosting.net/?partner=cobalt). a part of our infrastructure is hosted on their network. we really appreciate their kindness and support!
+- [how to protect a cobalt instance](/docs/protect-an-instance.md)
+- [cobalt api instance environment variables](/docs/api-env-variables.md)
+- [cobalt api documentation](/docs/api.md)
 
 ### ethics
 cobalt is a tool that makes downloading public content easier. it takes **zero liability**.

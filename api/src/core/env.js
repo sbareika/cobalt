@@ -71,6 +71,7 @@ export const loadEnvs = (env = process.env) => {
         corsURL: env.CORS_URL,
 
         cookiePath: env.COOKIE_PATH,
+        instagramAuthDebug: env.INSTAGRAM_AUTH_DEBUG === '1',
 
         rateLimitWindow: (env.RATELIMIT_WINDOW && parseInt(env.RATELIMIT_WINDOW)) || 60,
         rateLimitMax: (env.RATELIMIT_MAX && parseInt(env.RATELIMIT_MAX)) || 20,

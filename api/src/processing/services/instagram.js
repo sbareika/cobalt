@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto";
 import { resolveRedirectingURL } from "../url.js";
-import { genericUserAgent } from "../../config.js";
+import { env, genericUserAgent } from "../../config.js";
 import { createStream } from "../../stream/manage.js";
 import { getCookie, updateCookie } from "../cookie/manager.js";
 
@@ -57,6 +57,11 @@ const getObjectFromEntries = (name, data) => {
 
 export default function instagram(obj) {
     const dispatcher = obj.dispatcher;
+    const authDebug = (...args) => {
+        if (env.instagramAuthDebug) {
+            console.log("[instagram:auth]", ...args);
+        }
+    };
 
     async function findDtsgId(cookie) {
         try {
@@ -110,45 +115,91 @@ export default function instagram(obj) {
         const oembedURL = new URL('https://i.instagram.com/api/v1/oembed/');
         oembedURL.searchParams.set('url', `https://www.instagram.com/p/${id}/`);
 
-        const oembed = await fetch(oembedURL, {
+        const response = await fetch(oembedURL, {
             headers: {
                 ...mobileHeaders,
                 ...( token && { authorization: `Bearer ${token}` } ),
                 cookie
             },
             dispatcher
-        }).then(r => r.json()).catch(() => {});
+        }).catch(() => {});
+
+        let oembed;
+        try {
+            oembed = await response?.json();
+        } catch {}
+
+        authDebug(
+            "oembed",
+            {
+                id,
+                mode: token ? "bearer" : cookie ? "cookie" : "none",
+                status: response?.status,
+                hasMediaId: !!oembed?.media_id,
+                message: oembed?.message,
+                errorType: oembed?.error_type,
+            }
+        );
 
         return oembed?.media_id;
     }
 
     async function requestMobileApi(mediaId, { cookie, token } = {}) {
-        const mediaInfo = await fetch(`https://i.instagram.com/api/v1/media/${mediaId}/info/`, {
+        const response = await fetch(`https://i.instagram.com/api/v1/media/${mediaId}/info/`, {
             headers: {
                 ...mobileHeaders,
                 ...( token && { authorization: `Bearer ${token}` } ),
                 cookie
             },
             dispatcher
-        }).then(r => r.json()).catch(() => {});
+        }).catch(() => {});
+
+        let mediaInfo;
+        try {
+            mediaInfo = await response?.json();
+        } catch {}
+
+        authDebug(
+            "mobile_api",
+            {
+                mediaId,
+                mode: token ? "bearer" : cookie ? "cookie" : "none",
+                status: response?.status,
+                hasItem: !!mediaInfo?.items?.[0],
+                message: mediaInfo?.message,
+                errorType: mediaInfo?.error_type,
+            }
+        );
 
         return mediaInfo?.items?.[0];
     }
 
     async function requestHTML(id, cookie) {
-        const data = await fetch(`https://www.instagram.com/p/${id}/embed/captioned/`, {
+        const response = await fetch(`https://www.instagram.com/p/${id}/embed/captioned/`, {
             headers: {
                 ...embedHeaders,
                 cookie
             },
             dispatcher
-        }).then(r => r.text()).catch(() => {});
+        }).catch(() => {});
+
+        const data = await response?.text().catch(() => {});
 
         let embedData = JSON.parse(data?.match(/"init",\[\],\[(.*?)\]\],/)[1]);
 
         if (!embedData || !embedData?.contextJSON) return false;
 
         embedData = JSON.parse(embedData.contextJSON);
+
+        authDebug(
+            "html_embed",
+            {
+                id,
+                mode: cookie ? "cookie" : "none",
+                status: response?.status,
+                hasContext: !!embedData,
+            }
+        );
 
         return embedData;
     }
@@ -240,10 +291,22 @@ export default function instagram(obj) {
             }).toString()
         });
 
-        return {
-            gql_data: await req.json()
+        const gql_data = await req.json()
                         .then(r => r.data)
-                        .catch(() => null)
+                        .catch(() => null);
+
+        authDebug(
+            "gql",
+            {
+                id,
+                mode: cookie ? "cookie" : "none",
+                status: req.status,
+                hasData: !!(gql_data?.shortcode_media || gql_data?.xdt_shortcode_media),
+            }
+        );
+
+        return {
+            gql_data
         };
     }
 
@@ -424,6 +487,12 @@ export default function instagram(obj) {
             const bearer = getCookie('instagram_bearer');
             const token = bearer?.values()?.token;
 
+            authDebug("start", {
+                id,
+                hasInstagramCookie: !!cookie,
+                hasBearerToken: !!token,
+            });
+
             // get media_id for mobile api, three methods
             let media_id = await getMediaId(id);
             if (!media_id && token) media_id = await getMediaId(id, { token });
@@ -443,10 +512,23 @@ export default function instagram(obj) {
             // web app graphql api (no cookie, cookie)
             if (!hasData(data)) data = await requestGQL(id);
             if (!hasData(data) && cookie) data = await requestGQL(id, cookie);
+
+            authDebug("pipeline_result", {
+                id,
+                hasData: hasData(data),
+                source: data?.gql_data ? "gql" : "mobile_or_html",
+            });
         } catch {}
 
         if (!hasData(data)) {
-            return getErrorContext(id);
+            authDebug("pipeline_failed", { id });
+            const error = await getErrorContext(id);
+            authDebug("final_error", {
+                id,
+                source: "none",
+                code: error?.error || "fetch.empty",
+            });
+            return error;
         }
 
         if (data?.gql_data) {
@@ -455,7 +537,26 @@ export default function instagram(obj) {
             result = extractNewPost(data, id, alwaysProxy)
         }
 
-        if (result) return result;
+        if (result) {
+            const source = data?.gql_data
+                ? "gql"
+                : data?.video_versions || data?.image_versions2 || data?.carousel_media
+                    ? "mobile"
+                    : "html";
+
+            authDebug("final_source", {
+                id,
+                source,
+                kind: result?.picker ? "picker" : result?.isPhoto ? "photo" : "video",
+            });
+            return result;
+        }
+
+        authDebug("final_error", {
+            id,
+            source: data?.gql_data ? "gql" : "mobile_or_html",
+            code: "fetch.empty",
+        });
         return { error: "fetch.empty" }
     }
 
@@ -472,6 +573,12 @@ export default function instagram(obj) {
     async function getStory(username, id) {
         const cookie = getCookie('instagram');
         if (!cookie) return { error: "link.unsupported" };
+
+        authDebug("story_start", {
+            username,
+            id,
+            hasInstagramCookie: !!cookie,
+        });
 
         const userId = await usernameToId(username, cookie);
         if (!userId) return { error: "fetch.empty" };

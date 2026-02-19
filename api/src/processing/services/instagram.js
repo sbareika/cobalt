@@ -198,6 +198,8 @@ export default function instagram(obj) {
                 mode: cookie ? "cookie" : "none",
                 status: response?.status,
                 hasContext: !!embedData,
+                hasGqlDataKey: 'gql_data' in embedData,
+                gqlDataIsNull: embedData.gql_data === null,
             }
         );
 
@@ -214,6 +216,7 @@ export default function instagram(obj) {
         });
 
         const html = await req.text();
+        authDebug("gql_params", { id, status: req.status, htmlLen: html.length, hasLsd: html.includes('"LSD"') });
         const siteData = getObjectFromEntries('SiteData', html);
         const polarisSiteData = getObjectFromEntries('PolarisSiteData', html);
         const webConfig = getObjectFromEntries('DGWWebConfig', html);

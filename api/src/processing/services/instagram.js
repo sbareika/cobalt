@@ -83,7 +83,7 @@ export default function instagram(obj) {
             if (token) return token;
             return false;
         }
-        catch {}
+        catch { }
     }
 
     async function request(url, cookie, method = 'GET', requestData) {
@@ -118,16 +118,16 @@ export default function instagram(obj) {
         const response = await fetch(oembedURL, {
             headers: {
                 ...mobileHeaders,
-                ...( token && { authorization: `Bearer ${token}` } ),
+                ...(token && { authorization: `Bearer ${token}` }),
                 cookie
             },
             dispatcher
-        }).catch(() => {});
+        }).catch(() => { });
 
         let oembed;
         try {
             oembed = await response?.json();
-        } catch {}
+        } catch { }
 
         authDebug(
             "oembed",
@@ -148,16 +148,16 @@ export default function instagram(obj) {
         const response = await fetch(`https://i.instagram.com/api/v1/media/${mediaId}/info/`, {
             headers: {
                 ...mobileHeaders,
-                ...( token && { authorization: `Bearer ${token}` } ),
+                ...(token && { authorization: `Bearer ${token}` }),
                 cookie
             },
             dispatcher
-        }).catch(() => {});
+        }).catch(() => { });
 
         let mediaInfo;
         try {
             mediaInfo = await response?.json();
-        } catch {}
+        } catch { }
 
         authDebug(
             "mobile_api",
@@ -181,9 +181,9 @@ export default function instagram(obj) {
                 cookie
             },
             dispatcher
-        }).catch(() => {});
+        }).catch(() => { });
 
-        const data = await response?.text().catch(() => {});
+        const data = await response?.text().catch(() => { });
 
         let embedData = JSON.parse(data?.match(/"init",\[\],\[(.*?)\]\],/)[1]);
 
@@ -198,6 +198,8 @@ export default function instagram(obj) {
                 mode: cookie ? "cookie" : "none",
                 status: response?.status,
                 hasContext: !!embedData,
+                hasGqlDataKey: 'gql_data' in embedData,
+                gqlDataIsNull: embedData.gql_data === null,
             }
         );
 
@@ -214,6 +216,7 @@ export default function instagram(obj) {
         });
 
         const html = await req.text();
+        authDebug("gql_params", { id, status: req.status, htmlLen: html.length, hasLsd: html.includes('"LSD"') });
         const siteData = getObjectFromEntries('SiteData', html);
         const polarisSiteData = getObjectFromEntries('PolarisSiteData', html);
         const webConfig = getObjectFromEntries('DGWWebConfig', html);
@@ -292,8 +295,8 @@ export default function instagram(obj) {
         });
 
         const gql_data = await req.json()
-                        .then(r => r.data)
-                        .catch(() => null);
+            .then(r => r.data)
+            .catch(() => null);
 
         authDebug(
             "gql",
@@ -478,8 +481,8 @@ export default function instagram(obj) {
 
     async function getPost(id, alwaysProxy) {
         const hasData = (data) => data
-                                    && data.gql_data !== null
-                                    && data?.gql_data?.xdt_shortcode_media !== null;
+            && data.gql_data != null
+            && data?.gql_data?.xdt_shortcode_media !== null;
         let data, result;
         try {
             const cookie = getCookie('instagram');
@@ -518,7 +521,7 @@ export default function instagram(obj) {
                 hasData: hasData(data),
                 source: data?.gql_data ? "gql" : "mobile_or_html",
             });
-        } catch {}
+        } catch { }
 
         if (!hasData(data)) {
             authDebug("pipeline_failed", { id });
@@ -562,12 +565,12 @@ export default function instagram(obj) {
 
     async function usernameToId(username, cookie) {
         const url = new URL('https://www.instagram.com/api/v1/users/web_profile_info/');
-            url.searchParams.set('username', username);
+        url.searchParams.set('username', username);
 
         try {
             const data = await request(url, cookie);
             return data?.data?.user?.id;
-        } catch {}
+        } catch { }
     }
 
     async function getStory(username, id) {
@@ -590,7 +593,7 @@ export default function instagram(obj) {
             fb_dtsg: dtsgId,
             jazoest: '26438',
             variables: JSON.stringify({
-                reel_ids_arr : [ userId ],
+                reel_ids_arr: [userId],
             }),
             server_timestamps: true,
             doc_id: '25317500907894419'
@@ -600,7 +603,7 @@ export default function instagram(obj) {
         try {
             const data = (await request(url, cookie, 'POST', requestData));
             media = data?.data?.xdt_api__v1__feed__reels_media?.reels_media?.find(m => m.id === userId);
-        } catch {}
+        } catch { }
 
         const item = media.items.find(m => m.pk === id);
         if (!item) return { error: "fetch.empty" };
@@ -634,7 +637,7 @@ export default function instagram(obj) {
             // for some reason instagram decides to return HTML
             // instead of a redirect when requesting with a normal
             // browser user-agent
-            {'User-Agent': 'curl/7.88.1'}
+            { 'User-Agent': 'curl/7.88.1' }
         ).then(match => instagram({
             ...obj, ...match,
             shareId: undefined

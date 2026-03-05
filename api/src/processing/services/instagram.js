@@ -501,20 +501,22 @@ export default function instagram(obj) {
             });
 
             // get media_id for mobile api, three methods
-            let media_id = await getMediaId(id);
-            if (!media_id && token) media_id = await getMediaId(id, { token });
-            if (!media_id && cookie) media_id = await getMediaId(id, { cookie });
+            // disabled: oembed often 404s and mobile api steps are unreachable
+            // due to hasData() requiring gql_data, which mobile api doesn't return
+            let media_id; // = await getMediaId(id);
+            // if (!media_id && token) media_id = await getMediaId(id, { token });
+            // if (!media_id && cookie) media_id = await getMediaId(id, { cookie });
 
             // mobile api (bearer)
-            if (media_id && token) data = await requestMobileApi(media_id, { token });
+            // if (media_id && token) data = await requestMobileApi(media_id, { token });
 
             // mobile api (no cookie, cookie)
-            if (media_id && !hasData(data)) data = await requestMobileApi(media_id);
-            if (media_id && cookie && !hasData(data)) data = await requestMobileApi(media_id, { cookie });
+            // if (media_id && !hasData(data)) data = await requestMobileApi(media_id);
+            // if (media_id && cookie && !hasData(data)) data = await requestMobileApi(media_id, { cookie });
 
-            // html embed (no cookie, cookie)
+            // html embed (anon only — cookie auth causes redirect loops on this endpoint)
             if (!hasData(data)) data = await requestHTML(id);
-            if (!hasData(data) && cookie) data = await requestHTML(id, cookie);
+            // if (!hasData(data) && cookie) data = await requestHTML(id, cookie);
 
             // web app graphql api (no cookie, cookie)
             if (!hasData(data)) data = await requestGQL(id);

@@ -185,7 +185,11 @@ export default function instagram(obj) {
 
         const data = await response?.text().catch(() => { });
 
-        let embedData = JSON.parse(data?.match(/"init",\[\],\[(.*?)\]\],/)[1]);
+        const matchGroup = data?.match(/"init",\[\],\[(.*?)\]\],/)?.[1];
+        if (!matchGroup) return false;
+
+        let embedData;
+        try { embedData = JSON.parse(matchGroup); } catch { return false; }
 
         if (!embedData || !embedData?.contextJSON) return false;
 
